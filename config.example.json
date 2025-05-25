@@ -1,0 +1,4 @@
+{
+  "repoBasePath": "/path/to/your/repositories",
+  "cacheDir": "./mcp-cache"
+}
