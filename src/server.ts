@@ -39,7 +39,7 @@ const UpdateConfigSchema = z.object({
   key: z
     .string()
     .optional()
-    .describe('Dot-separated path to the config value (e.g., "repoBasePath" or "nested.key")'),
+    .describe('Dot-separated path to the config value (e.g., "searchableDirectories" or "cacheDir")'),
   value: z.any().optional().describe('Value to set (for set operation)'),
   array_item: z
     .any()
@@ -53,8 +53,8 @@ export class LocalRepoScannerServer {
   private server: Server;
   private config: ReturnType<typeof loadConfig>;
 
-  constructor() {
-    this.config = loadConfig();
+  constructor(mcpConfig?: unknown) {
+    this.config = loadConfig(mcpConfig);
     this.server = new Server(
       {
         name: 'local-context-mcp',
@@ -112,7 +112,7 @@ export class LocalRepoScannerServer {
         {
           name: 'update-config',
           description:
-            'Performs CRUD operations on the config.json file. Supports getting, setting, deleting values, and manipulating arrays. Changes are immediately saved to disk.',
+            'Performs CRUD operations on the config.json file. Manages configuration options: searchableDirectories (string[] - full absolute paths), cacheDir (string, optional). Supports getting, setting, deleting values, and manipulating arrays. Changes are immediately saved to disk.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -125,7 +125,7 @@ export class LocalRepoScannerServer {
               key: {
                 type: 'string',
                 description:
-                  'Dot-notation path to the config value. Examples: "repoBasePath" for top-level, "cache.ttl" for nested, "directories.0" for array index. Leave empty for "get" to retrieve entire config.',
+                  'Dot-notation path to the config value. Examples: "searchableDirectories" for top-level array, "cacheDir" for cache directory. Leave empty for "get" to retrieve entire config.',
               },
               value: {
                 description:
@@ -213,7 +213,7 @@ export class LocalRepoScannerServer {
 **Error:** ${errorMessage}
 
 ## Debug Information
-- Repository Base Path: ${this.config.repoBasePath}
+- Searchable Directories: ${this.config.searchableDirectories.join(', ')}
 - Cache Directory: ${this.config.cacheDir}
 - Request: ${JSON.stringify(input, null, 2)}`;
     }
@@ -250,10 +250,14 @@ export class LocalRepoScannerServer {
 ## 2. update-config
 **Purpose:** Manages the config.json file with CRUD operations.
 
+**Available Configuration Options:**
+- **searchableDirectories** (string[], required): Full absolute paths to directories that can be searched
+- **cacheDir** (string, optional): Cache directory (default: ./mcp-cache)
+
 **Parameters:**
 - **operation** (required, string): One of: get, set, delete, add, remove
 - **key** (optional, string): Dot-notation path to config value
-  - Example: "cache.ttl" or "directories.0"
+  - Example: "searchableDirectories", "cacheDir"
 - **value** (optional, any): Value for "set" operation
 - **array_item** (optional, any): Item for "add"/"remove" operations
 
@@ -262,8 +266,11 @@ export class LocalRepoScannerServer {
 // Get entire config
 { "operation": "get" }
 
-// Set a value
-{ "operation": "set", "key": "repoBasePath", "value": "/home/projects" }
+// Add directory to searchableDirectories
+{ "operation": "add", "key": "searchableDirectories", "array_item": "/Users/john/projects/new-project" }
+
+// Remove directory from searchableDirectories
+{ "operation": "remove", "key": "searchableDirectories", "array_item": "/Users/john/projects/old-project" }
 
 // Add to array
 { "operation": "add", "key": "customDirs", "array_item": "new-dir" }
@@ -274,10 +281,11 @@ export class LocalRepoScannerServer {
 
 **Parameters:** None
 
-**Configuration:**
-Current configuration can be viewed with: \`{"operation": "get"}\` using update-config tool.
-Base repository path: ${this.config.repoBasePath}
-Cache directory: ${this.config.cacheDir}`;
+**Current Configuration:**
+- Searchable directories: ${this.config.searchableDirectories.join(', ')}
+- Cache directory: ${this.config.cacheDir}
+
+To view or modify configuration, use the update-config tool with \`{"operation": "get"}\``;
   }
 
   async run(): Promise<void> {

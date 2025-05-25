@@ -1,9 +1,9 @@
 {
-  "repoBasePath": "/path/to/your/repositories",
   "searchableDirectories": [
-    "project-1",
-    "project-2",
-    "shared-libs"
+    "/Users/john/projects/my-app",
+    "/Users/john/work/client-project",
+    "/opt/shared/libraries/common-utils",
+    "/home/john/experiments/ai-research"
   ],
   "cacheDir": "./mcp-cache"
 }

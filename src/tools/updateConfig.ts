@@ -14,14 +14,14 @@ export interface UpdateConfigRequest {
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   const keys = path.split('.');
   let current: unknown = obj;
-  
+
   for (const key of keys) {
     if (typeof current !== 'object' || current === null) {
       return undefined;
     }
     current = (current as Record<string, unknown>)[key];
   }
-  
+
   return current;
 }
 

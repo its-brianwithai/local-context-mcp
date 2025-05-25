@@ -74,8 +74,10 @@ function extractCompleteSignature(lines: string[], startIndex: number): string {
       openParens > 0 ||
       openBrackets > 0 ||
       inString ||
-      (signature.trim().endsWith(',') || false) ||
-      (signature.trim().endsWith('=>') || false)) &&
+      signature.trim().endsWith(',') ||
+      false ||
+      signature.trim().endsWith('=>') ||
+      false) &&
     index < lines.length - 1
   ) {
     index++;

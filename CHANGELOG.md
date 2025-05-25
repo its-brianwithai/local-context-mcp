@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **BREAKING**: Removed `repoBasePath` configuration - now use full absolute paths in `searchableDirectories`
+- `searchableDirectories` now accepts full absolute paths instead of relative directory names
+- Added support for MCP configuration via `--config` command line argument
+- Configuration merging: MCP config takes precedence over config.json
+- Improved configuration flexibility with three configuration options:
+  1. Direct MCP configuration (recommended)
+  2. Traditional config.json file
+  3. Hybrid approach (merge both configurations)
+
+### Added
+- Support for searching across multiple unrelated directory trees
+- Ability to configure server directly in Claude Desktop config without separate config.json
+- Enhanced documentation for all configuration methods
+
 ## [0.1.0] - 2025-01-25
 
 ### Added

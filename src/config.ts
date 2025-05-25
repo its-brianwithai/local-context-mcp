@@ -2,66 +2,75 @@ import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
 export interface Config {
-  repoBasePath: string;
   searchableDirectories: string[];
   cacheDir: string;
 }
 
-export function loadConfig(): Config {
+export function loadConfig(mcpConfig?: unknown): Config {
+  let fileConfig: Record<string, unknown> = {};
+  let finalConfig: Record<string, unknown> = {};
+
+  // First, try to load config.json file
   const configPath = resolve(process.cwd(), 'config.json');
 
-  // Check if config file exists
-  if (!existsSync(configPath)) {
-    throw new Error(
-      `Configuration file not found at ${configPath}. Please create a config.json file based on config.example.json`
-    );
+  if (existsSync(configPath)) {
+    try {
+      const configContent = readFileSync(configPath, 'utf-8');
+      fileConfig = JSON.parse(configContent) as Record<string, unknown>;
+    } catch (error) {
+      console.error('Warning: Failed to parse config.json:', error);
+    }
   }
 
-  // Read and parse config file
-  let configData: unknown;
-  try {
-    const configContent = readFileSync(configPath, 'utf-8');
-    configData = JSON.parse(configContent) as unknown;
-  } catch (error) {
-    throw new Error(
-      `Failed to parse config.json: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+  // Then merge with MCP config, with MCP taking precedence
+  if (mcpConfig && typeof mcpConfig === 'object' && mcpConfig !== null) {
+    const mcpConfigObj = mcpConfig as Record<string, unknown>;
+    finalConfig = { ...fileConfig, ...mcpConfigObj };
+  } else {
+    finalConfig = fileConfig;
   }
 
-  // Type guard to check if config is an object
-  if (typeof configData !== 'object' || configData === null) {
-    throw new Error('Invalid configuration: config.json must contain an object');
+  // Validate the merged configuration
+  if (!Array.isArray(finalConfig['searchableDirectories'])) {
+    if (!existsSync(configPath)) {
+      throw new Error(
+        `No searchableDirectories configured. Please either:\n` +
+          `1. Pass configuration via MCP (--config argument)\n` +
+          `2. Create a config.json file based on config.example.json`
+      );
+    } else {
+      throw new Error(
+        'Missing or invalid configuration field: searchableDirectories (must be an array)'
+      );
+    }
   }
 
-  const config = configData as Record<string, unknown>;
-
-  // Validate required fields
-  if (typeof config['repoBasePath'] !== 'string') {
-    throw new Error('Missing or invalid configuration field: repoBasePath (must be a string)');
-  }
-  if (!Array.isArray(config['searchableDirectories'])) {
-    throw new Error(
-      'Missing or invalid configuration field: searchableDirectories (must be an array)'
-    );
-  }
-
-  // Validate searchableDirectories contains strings
-  const searchableDirectories = config['searchableDirectories'] as unknown[];
+  const searchableDirectories = finalConfig['searchableDirectories'] as unknown[];
   if (!searchableDirectories.every((dir): dir is string => typeof dir === 'string')) {
     throw new Error('Invalid configuration: searchableDirectories must contain only strings');
   }
 
-  // Resolve paths
-  const repoBasePath = resolve(process.cwd(), config['repoBasePath']);
-  const cacheDir = 
-    typeof config['cacheDir'] === 'string'
-      ? resolve(process.cwd(), config['cacheDir'])
-      : resolve(process.cwd(), 'mcp-cache');
-
-  // Validate repo base path exists
-  if (!existsSync(repoBasePath)) {
-    throw new Error(`Repository base path does not exist: ${repoBasePath}`);
+  if (searchableDirectories.length === 0) {
+    throw new Error(
+      'Configuration error: searchableDirectories must contain at least one directory'
+    );
   }
+
+  // Resolve all directory paths
+  const resolvedDirectories = searchableDirectories.map((dir) => resolve(dir));
+
+  // Validate all directories exist
+  for (const dir of resolvedDirectories) {
+    if (!existsSync(dir)) {
+      throw new Error(`Searchable directory does not exist: ${dir}`);
+    }
+  }
+
+  // Resolve cache directory path
+  const cacheDir =
+    typeof finalConfig['cacheDir'] === 'string'
+      ? resolve(process.cwd(), finalConfig['cacheDir'])
+      : resolve(process.cwd(), 'mcp-cache');
 
   // Create cache directory if it doesn't exist
   if (!existsSync(cacheDir)) {
@@ -69,8 +78,7 @@ export function loadConfig(): Config {
   }
 
   return {
-    repoBasePath,
-    searchableDirectories,
+    searchableDirectories: resolvedDirectories,
     cacheDir,
   };
 }

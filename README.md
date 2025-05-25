@@ -11,6 +11,54 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
 - **Configurable Paths**: Analyze any local directory structure
 - **Multiple Language Support**: Works with Dart, JavaScript, TypeScript, Python, Java, and more
 
+## 📚 Available Tools
+
+### fetch-context
+
+Searches for terms across configured directories and extracts comprehensive context about matching files and code structure.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `search_terms` | string[] | ✅ | Array of search terms to find across all configured directories (case-insensitive) |
+| `globs` | string[] | ❌ | Array of glob patterns to match files (e.g., `["**/*.js", "src/**/*.ts"]`) |
+| `regex` | string[] | ❌ | Array of regex patterns to search within files (e.g., `["class.*Controller", "function\\s+\\w+"]`) |
+| `reference_depth` | number | ❌ | Maximum depth for tracking file references (-1 for unlimited, default: -1) |
+
+### update-config
+
+Performs CRUD operations on the config.json file. This tool allows you to dynamically manage all configuration options.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `operation` | string | ✅ | Operation to perform: 'get', 'set', 'delete', 'add', or 'remove' |
+| `key` | string | ❌ | Dot-separated path to the config value (e.g., "searchableDirectories" or "cacheDir") |
+| `value` | any | ❌ | Value to set (for 'set' operation) |
+| `array_item` | any | ❌ | Item to add/remove from array (for 'add'/'remove' operations) |
+
+**Available Configuration Options:**
+
+- `searchableDirectories` (string[], required): Array of full absolute paths to directories that can be searched
+  - Example: `["/Users/john/projects/my-app", "/opt/shared/libraries", "/home/john/work/client-project"]`
+  - Each path must be a complete, absolute file system path
+  - Supports multiple unrelated directory trees
+- `cacheDir` (string, optional): Directory for storing cached analysis results
+  - Default: `./mcp-cache`
+  - Example: `/tmp/mcp-cache` or `./cache`
+
+**Advanced Configuration (can be added via update-config):**
+
+- Custom arrays for project organization
+- Nested configuration objects for different environments
+- Any JSON-compatible data structure
+
+### list-tools
+
+Shows detailed information about all available tools, their parameters, and usage examples.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| None | - | - | This tool requires no parameters |
+
 ## 📋 Prerequisites
 
 - Node.js 18+ 
@@ -39,14 +87,14 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
    cp config.example.json config.json
    ```
    
-   Edit `config.json` to set your repository path and searchable directories:
+   Edit `config.json` to set your searchable directories with full absolute paths:
    ```json
    {
-     "repoBasePath": "/path/to/your/repositories",
      "searchableDirectories": [
-       "project-1",
-       "project-2",
-       "shared-libs"
+       "/Users/john/projects/my-app",
+       "/Users/john/work/client-project",
+       "/opt/shared/libraries/common-utils",
+       "/home/john/experiments/ai-research"
      ],
      "cacheDir": "./mcp-cache"
    }
@@ -58,13 +106,58 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
 
 The `config.json` file contains:
 
-- `repoBasePath`: The base directory containing your repositories/projects (required)
-- `searchableDirectories`: Array of directory names within repoBasePath that can be searched (required)
+- `searchableDirectories`: Array of full absolute paths to directories that can be searched (required)
 - `cacheDir`: Directory for caching analysis results (default: `./mcp-cache`)
 
 ### Claude Desktop Integration
 
+You can configure the server in two ways:
+
+#### Option 1: Direct MCP Configuration (Recommended)
+
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "local-context": {
+      "command": "node",
+      "args": [
+        "/path/to/local-context-mcp/dist/index.js",
+        "--config={\"searchableDirectories\":[\"/Users/john/projects/my-app\",\"/Users/john/work/client-project\",\"/opt/shared/libraries\"],\"cacheDir\":\"/tmp/mcp-cache\"}"
+      ]
+    }
+  }
+}
+```
+
+For better readability, you can format it across multiple lines (most JSON parsers support this):
+
+```json
+{
+  "mcpServers": {
+    "local-context": {
+      "command": "node",
+      "args": [
+        "/path/to/local-context-mcp/dist/index.js",
+        "--config={
+          \"searchableDirectories\": [
+            \"/Users/john/projects/my-app\",
+            \"/Users/john/work/client-project\",
+            \"/opt/shared/libraries/common-utils\",
+            \"/home/john/experiments/ai-research\"
+          ],
+          \"cacheDir\": \"./mcp-cache\"
+        }"
+      ]
+    }
+  }
+}
+```
+
+#### Option 2: Using config.json File
+
+If you prefer to use a separate configuration file, add this to Claude Desktop config:
 
 ```json
 {
@@ -76,6 +169,40 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   }
 }
 ```
+
+Then create a `config.json` file in the project directory with your directories.
+
+#### Option 3: Hybrid Configuration (Best of Both)
+
+You can combine both methods - use `config.json` for base directories and override/extend via MCP:
+
+**config.json:**
+```json
+{
+  "searchableDirectories": [
+    "/Users/john/projects/default-project",
+    "/Users/john/work/base-libraries"
+  ],
+  "cacheDir": "./mcp-cache"
+}
+```
+
+**Claude Desktop config:**
+```json
+{
+  "mcpServers": {
+    "local-context": {
+      "command": "node",
+      "args": [
+        "/path/to/local-context-mcp/dist/index.js",
+        "--config={\"searchableDirectories\":[\"/Users/john/temp/current-task\",\"/Users/john/projects/default-project\",\"/Users/john/work/base-libraries\"]}"
+      ]
+    }
+  }
+}
+```
+
+Note: MCP configuration takes precedence when there are conflicts.
 
 ### Agent System Prompt
 
@@ -105,38 +232,6 @@ For development with auto-reload:
 npm run dev
 ```
 
-### Tools
-
-#### fetch-context
-
-Searches for terms across configured directories and extracts comprehensive context about matching files and code structure.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `search_terms` | string[] | ✅ | Array of search terms to find across all configured directories (case-insensitive) |
-| `globs` | string[] | ❌ | Array of glob patterns to match files (e.g., `["**/*.js", "src/**/*.ts"]`) |
-| `regex` | string[] | ❌ | Array of regex patterns to search within files (e.g., `["class.*Controller", "function\\s+\\w+"]`) |
-| `reference_depth` | number | ❌ | Maximum depth for tracking file references (-1 for unlimited, default: -1) |
-
-#### update-config
-
-Performs CRUD operations on the config.json file.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `operation` | string | ✅ | Operation to perform: 'get', 'set', 'delete', 'add', or 'remove' |
-| `key` | string | ❌ | Dot-separated path to the config value (e.g., "repoBasePath" or "nested.key") |
-| `value` | any | ❌ | Value to set (for 'set' operation) |
-| `array_item` | any | ❌ | Item to add/remove from array (for 'add'/'remove' operations) |
-
-#### list-tools
-
-Shows detailed information about all available tools, their parameters, and usage examples.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| None | - | - | This tool requires no parameters |
-
 ### Example Prompts
 
 When using with Claude:
@@ -149,9 +244,9 @@ When using with Claude:
 
 **update-config examples:**
 - "Use update-config to get the current configuration"
-- "Set the repoBasePath to '/home/user/projects' using update-config"
-- "Add 'new-project' to searchableDirectories using update-config"
-- "Remove 'old-project' from searchableDirectories in the configuration"
+- "Add '/Users/john/new-project' to searchableDirectories using update-config"
+- "Remove '/Users/john/old-project' from searchableDirectories in the configuration"
+- "Set the cacheDir to '/tmp/mcp-cache' using update-config"
 
 **list-tools examples:**
 - "Use list-tools to show me all available tools and how to use them"

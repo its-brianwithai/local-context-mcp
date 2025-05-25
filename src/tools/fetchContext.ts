@@ -8,7 +8,6 @@ import { buildMarkdownExplanation } from '../utils/markdownBuilder.js';
 import { getCachedResult, saveToCache } from '../utils/cacheManager.js';
 
 export interface FetchContextConfig {
-  repoBasePath: string;
   searchableDirectories: string[];
   cacheDir: string;
 }
@@ -24,11 +23,12 @@ export async function fetchContext(
   const matchedDirectories: string[] = [];
 
   // Find directories that match any of the search terms
-  for (const dir of config.searchableDirectories) {
-    const dirLower = dir.toLowerCase();
-    const dirPath = path.join(config.repoBasePath, dir);
+  for (const dirPath of config.searchableDirectories) {
+    // Extract directory name from full path
+    const dirName = path.basename(dirPath);
+    const dirLower = dirName.toLowerCase();
 
-    // Check if directory exists
+    // Check if directory exists (already validated in config, but double-check)
     try {
       const stats = await fs.stat(dirPath);
       if (!stats.isDirectory()) {
@@ -39,11 +39,11 @@ export async function fetchContext(
       continue;
     }
 
-    // Check if any search term matches this directory
+    // Check if any search term matches this directory name
     const matches = request.search_terms.some((term) => dirLower.includes(term.toLowerCase()));
 
     if (matches) {
-      matchedDirectories.push(dir);
+      matchedDirectories.push(dirPath);
     }
   }
 
@@ -52,18 +52,21 @@ export async function fetchContext(
     return (
       `# No directories found matching search terms\n\n` +
       `**Search terms:** ${request.search_terms.join(', ')}\n` +
-      `**Configured directories:** ${config.searchableDirectories.join(', ')}\n`
+      `**Configured directories:** ${config.searchableDirectories.map((d) => path.basename(d)).join(', ')}\n`
     );
   }
 
   // Process each matched directory
-  for (const targetDir of matchedDirectories) {
-    const targetPath = path.join(config.repoBasePath, targetDir);
+  for (const targetPath of matchedDirectories) {
+    const targetDir = path.basename(targetPath);
 
     // Find matching files
     const matchedFilePaths = await findMatchingFiles(targetPath, request.globs, request.regex);
 
-    if (matchedFilePaths.length === 0 && ((request.globs?.length ?? 0) > 0 || (request.regex?.length ?? 0) > 0)) {
+    if (
+      matchedFilePaths.length === 0 &&
+      ((request.globs?.length ?? 0) > 0 || (request.regex?.length ?? 0) > 0)
+    ) {
       results.push(
         `# Directory Analysis: ${targetDir}\n\nNo files found matching the specified patterns.\n\n` +
           `**Glob patterns:** ${request.globs?.join(', ') ?? 'None'}\n` +

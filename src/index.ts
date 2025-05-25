@@ -3,7 +3,21 @@ import { LocalRepoScannerServer } from './server.js';
 
 async function main(): Promise<void> {
   try {
-    const server = new LocalRepoScannerServer();
+    // MCP servers receive configuration via command line arguments
+    // The config is passed as a JSON string in the --config argument
+    const configArg = process.argv.find((arg) => arg.startsWith('--config='));
+    let mcpConfig: unknown;
+
+    if (configArg) {
+      try {
+        const configJson = configArg.slice('--config='.length);
+        mcpConfig = JSON.parse(configJson);
+      } catch (error) {
+        console.error('Failed to parse MCP config:', error);
+      }
+    }
+
+    const server = new LocalRepoScannerServer(mcpConfig);
     await server.run();
   } catch (error) {
     console.error('Fatal error:', error);
