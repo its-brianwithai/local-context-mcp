@@ -18,5 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable base path for repository scanning
 - Comprehensive markdown output formatting
 - JSON-based configuration system
-- Support for analyzing multiple directories in a single request
+- `searchableDirectories` configuration for defining which directories can be searched
+- `search_terms` parameter for finding relevant directories across the configured workspace
 - `update-config` tool for dynamic configuration management (CRUD operations)
+- `list-tools` command to display available tools with detailed documentation
+- Enhanced tool descriptions with comprehensive parameter documentation and examples
+- ESLint and Prettier configuration for code quality and formatting
+- TypeScript strict mode compliance with comprehensive type safety

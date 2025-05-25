@@ -20,7 +20,7 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/local-context-mcp.git
+   git clone https://github.com/its-brianwithai/local-context-mcp.git
    cd local-context-mcp
    ```
 
@@ -39,10 +39,15 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
    cp config.example.json config.json
    ```
    
-   Edit `config.json` to set your repository path:
+   Edit `config.json` to set your repository path and searchable directories:
    ```json
    {
      "repoBasePath": "/path/to/your/repositories",
+     "searchableDirectories": [
+       "project-1",
+       "project-2",
+       "shared-libs"
+     ],
      "cacheDir": "./mcp-cache"
    }
    ```
@@ -54,6 +59,7 @@ A Model Context Protocol (MCP) server that provides intelligent analysis of loca
 The `config.json` file contains:
 
 - `repoBasePath`: The base directory containing your repositories/projects (required)
+- `searchableDirectories`: Array of directory names within repoBasePath that can be searched (required)
 - `cacheDir`: Directory for caching analysis results (default: `./mcp-cache`)
 
 ### Claude Desktop Integration
@@ -69,6 +75,20 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
     }
   }
 }
+```
+
+### Agent System Prompt
+
+Add this snippet to your agent's system prompt to help it understand when to use the local-context-mcp tool:
+
+```markdown
+You have access to the local-context-mcp tool for analyzing local codebases. Use fetch-context to search and understand code structure, find patterns across files, trace dependencies, and extract documentation about: **{subject}**. Provide search_terms (required) to find relevant directories, and optionally globs for file patterns, regex for content search, and reference_depth for import tracing.
+```
+
+Customize the `{subject}` placeholder with your specific use case:
+
+```yaml
+subject: All Flutter packages and Dart libraries in the monorepo
 ```
 
 ## 📖 Usage
@@ -89,11 +109,11 @@ npm run dev
 
 #### fetch-context
 
-Analyzes directories and extracts comprehensive context about files and code structure.
+Searches for terms across configured directories and extracts comprehensive context about matching files and code structure.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `target_directories` | string[] | ✅ | Array of directory names to analyze within the repository base path |
+| `search_terms` | string[] | ✅ | Array of search terms to find across all configured directories (case-insensitive) |
 | `globs` | string[] | ❌ | Array of glob patterns to match files (e.g., `["**/*.js", "src/**/*.ts"]`) |
 | `regex` | string[] | ❌ | Array of regex patterns to search within files (e.g., `["class.*Controller", "function\\s+\\w+"]`) |
 | `reference_depth` | number | ❌ | Maximum depth for tracking file references (-1 for unlimited, default: -1) |
@@ -109,21 +129,34 @@ Performs CRUD operations on the config.json file.
 | `value` | any | ❌ | Value to set (for 'set' operation) |
 | `array_item` | any | ❌ | Item to add/remove from array (for 'add'/'remove' operations) |
 
+#### list-tools
+
+Shows detailed information about all available tools, their parameters, and usage examples.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| None | - | - | This tool requires no parameters |
+
 ### Example Prompts
 
 When using with Claude:
 
 **fetch-context examples:**
-- "Use the fetch-context tool to analyze the 'myproject' directory, looking for all classes that extend BaseController"
-- "Show me how the authentication system works by finding all files with 'auth' in their name across both 'frontend' and 'backend' directories"
-- "Find all configuration files and their usage patterns in the 'backend' and 'shared' directories"
-- "Analyze multiple microservices at once by searching in ['service-a', 'service-b', 'service-c'] directories"
+- "Use fetch-context to search for 'auth' across all configured directories and show me how authentication works"
+- "Find all React components by searching for 'component' with globs ['**/*.jsx', '**/*.tsx']"
+- "Search for 'config' to find all configuration files and their usage patterns"
+- "Look for 'database' or 'db' to understand the data layer implementation"
 
 **update-config examples:**
 - "Use update-config to get the current configuration"
 - "Set the repoBasePath to '/home/user/projects' using update-config"
-- "Add 'new-project' to a custom directories array in the config"
-- "Remove the cacheDir setting from the configuration"
+- "Add 'new-project' to searchableDirectories using update-config"
+- "Remove 'old-project' from searchableDirectories in the configuration"
+
+**list-tools examples:**
+- "Use list-tools to show me all available tools and how to use them"
+- "What tools are available in this MCP server?"
+- "Show me the documentation for all tools"
 
 ## 🏗️ Architecture
 
@@ -171,6 +204,10 @@ local-context-mcp/
 - `npm run build` - Build TypeScript to JavaScript
 - `npm run dev` - Run in development mode with auto-reload
 - `npm start` - Run the compiled server
+- `npm run lint` - Run ESLint to check code quality
+- `npm run lint:fix` - Run ESLint and automatically fix issues
+- `npm run format` - Format code with Prettier
+- `npm run typecheck` - Run TypeScript type checking without building
 - `npm test` - Run tests (not yet implemented)
 
 ### Testing

@@ -1,4 +1,9 @@
 {
   "repoBasePath": "/path/to/your/repositories",
+  "searchableDirectories": [
+    "project-1",
+    "project-2",
+    "shared-libs"
+  ],
   "cacheDir": "./mcp-cache"
 }

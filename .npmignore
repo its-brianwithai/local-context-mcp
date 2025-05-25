@@ -1,0 +1,41 @@
+# Source files (only publish compiled)
+src/
+tsconfig.json
+
+# Configuration
+config.json
+.env
+.env.*
+
+# Development files
+*.log
+*.bak
+test-*.js
+
+# Cache
+mcp-cache/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+
+# Documentation sources
+docs/
+
+# Development dependencies
+node_modules/
+.npm/
+
+# Build artifacts that shouldn't be published
+*.tsbuildinfo

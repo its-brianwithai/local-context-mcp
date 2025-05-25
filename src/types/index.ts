@@ -1,5 +1,5 @@
 export interface FetchContextRequest {
-  target_directories: string[];
+  search_terms: string[];
   globs?: string[];
   regex?: string[];
   reference_depth?: number;
@@ -26,8 +26,9 @@ export interface ExtractedCode {
 
 export interface CacheEntry {
   hash: string;
-  target_directory?: string;
-  target_directories?: string[];
+  search_terms?: string[];
+  target_directory?: string; // Legacy support
+  target_directories?: string[]; // Legacy support
   globs?: string[];
   regex?: string[];
   reference_depth?: number;

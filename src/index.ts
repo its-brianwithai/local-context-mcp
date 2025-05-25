@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { LocalRepoScannerServer } from './server.js';
 
-async function main() {
+async function main(): Promise<void> {
   try {
     const server = new LocalRepoScannerServer();
     await server.run();
