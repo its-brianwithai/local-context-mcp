@@ -24,10 +24,6 @@ export async function fetchContext(
 
   // Find directories that match any of the search terms
   for (const dirPath of config.searchableDirectories) {
-    // Extract directory name from full path
-    const dirName = path.basename(dirPath);
-    const dirLower = dirName.toLowerCase();
-
     // Check if directory exists (already validated in config, but double-check)
     try {
       const stats = await fs.stat(dirPath);
@@ -39,11 +35,31 @@ export async function fetchContext(
       continue;
     }
 
-    // Check if any search term matches this directory name
-    const matches = request.search_terms.some((term) => dirLower.includes(term.toLowerCase()));
+    // Check if the directory name itself matches
+    const dirName = path.basename(dirPath);
+    const dirLower = dirName.toLowerCase();
+    const directoryMatches = request.search_terms.some((term) => dirLower.includes(term.toLowerCase()));
 
-    if (matches) {
+    if (directoryMatches) {
       matchedDirectories.push(dirPath);
+    } else {
+      // Search for subdirectories that match the search terms
+      try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory() && !entry.name.startsWith('.')) {
+            const subDirLower = entry.name.toLowerCase();
+            const subDirMatches = request.search_terms.some((term) => subDirLower.includes(term.toLowerCase()));
+            
+            if (subDirMatches) {
+              matchedDirectories.push(path.join(dirPath, entry.name));
+            }
+          }
+        }
+      } catch {
+        // Skip if can't read directory
+        continue;
+      }
     }
   }
 
@@ -61,7 +77,9 @@ export async function fetchContext(
     const targetDir = path.basename(targetPath);
 
     // Find matching files
-    const matchedFilePaths = await findMatchingFiles(targetPath, request.globs, request.regex);
+    // If no globs or regex specified, include all files in the directory
+    const globs = request.globs?.length ? request.globs : ['**/*'];
+    const matchedFilePaths = await findMatchingFiles(targetPath, globs, request.regex);
 
     if (
       matchedFilePaths.length === 0 &&

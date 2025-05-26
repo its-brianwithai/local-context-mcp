@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
+import { homedir } from 'os';
 
 export interface Config {
   searchableDirectories: string[];
@@ -22,12 +23,26 @@ export function loadConfig(mcpConfig?: unknown): Config {
     }
   }
 
-  // Then merge with MCP config, with MCP taking precedence
+  // Check for individual environment variables
+  let envConfig: Record<string, unknown> = {};
+  
+  if (process.env['searchableDirectories']) {
+    try {
+      envConfig['searchableDirectories'] = JSON.parse(process.env['searchableDirectories']);
+    } catch (error) {
+      console.error('Warning: Failed to parse searchableDirectories environment variable:', error);
+    }
+  }
+  
+  if (process.env['cacheDir']) {
+    envConfig['cacheDir'] = process.env['cacheDir'];
+  }
+
+  // Merge configs with precedence: mcpConfig > envConfig > fileConfig
+  finalConfig = { ...fileConfig, ...envConfig };
   if (mcpConfig && typeof mcpConfig === 'object' && mcpConfig !== null) {
     const mcpConfigObj = mcpConfig as Record<string, unknown>;
-    finalConfig = { ...fileConfig, ...mcpConfigObj };
-  } else {
-    finalConfig = fileConfig;
+    finalConfig = { ...finalConfig, ...mcpConfigObj };
   }
 
   // Validate the merged configuration
@@ -69,8 +84,8 @@ export function loadConfig(mcpConfig?: unknown): Config {
   // Resolve cache directory path
   const cacheDir =
     typeof finalConfig['cacheDir'] === 'string'
-      ? resolve(process.cwd(), finalConfig['cacheDir'])
-      : resolve(process.cwd(), 'mcp-cache');
+      ? resolve(finalConfig['cacheDir'])
+      : resolve(homedir(), '.cache', 'local-context-mcp');
 
   // Create cache directory if it doesn't exist
   if (!existsSync(cacheDir)) {

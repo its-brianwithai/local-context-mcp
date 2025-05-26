@@ -3,8 +3,8 @@ import { LocalRepoScannerServer } from './server.js';
 
 async function main(): Promise<void> {
   try {
-    // MCP servers receive configuration via command line arguments
-    // The config is passed as a JSON string in the --config argument
+    // MCP servers can receive configuration via command line arguments or environment variables
+    // Check for --config argument first (legacy support)
     const configArg = process.argv.find((arg) => arg.startsWith('--config='));
     let mcpConfig: unknown;
 
@@ -16,6 +16,7 @@ async function main(): Promise<void> {
         console.error('Failed to parse MCP config:', error);
       }
     }
+    // If no command line config, environment variables will be used by loadConfig()
 
     const server = new LocalRepoScannerServer(mcpConfig);
     await server.run();

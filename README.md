@@ -102,18 +102,7 @@ Shows detailed information about all available tools, their parameters, and usag
 
 ## 🔧 Configuration
 
-### Configuration File
-
-The `config.json` file contains:
-
-- `searchableDirectories`: Array of full absolute paths to directories that can be searched (required)
-- `cacheDir`: Directory for caching analysis results (default: `./mcp-cache`)
-
-### Claude Desktop Integration
-
-You can configure the server in two ways:
-
-#### Option 1: Direct MCP Configuration (Recommended)
+### Claude Desktop
 
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -122,87 +111,72 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "local-context": {
       "command": "node",
-      "args": [
-        "/path/to/local-context-mcp/dist/index.js",
-        "--config={\"searchableDirectories\":[\"/Users/john/projects/my-app\",\"/Users/john/work/client-project\",\"/opt/shared/libraries\"],\"cacheDir\":\"/tmp/mcp-cache\"}"
-      ]
+      "args": ["/path/to/local-context-mcp/dist/index.js"],
+      "env": {
+        "searchableDirectories": "[\"/Users/john/projects/my-app\", \"/Users/john/work/client-project\", \"/opt/shared/libraries/common-utils\"]"
+      }
     }
   }
 }
 ```
 
-For better readability, you can format it across multiple lines (most JSON parsers support this):
+### Claude Code
+
+Add to your Claude Code MCP configuration (`~/.claude/.mcp.json`):
 
 ```json
 {
   "mcpServers": {
     "local-context": {
       "command": "node",
-      "args": [
-        "/path/to/local-context-mcp/dist/index.js",
-        "--config={
-          \"searchableDirectories\": [
-            \"/Users/john/projects/my-app\",
-            \"/Users/john/work/client-project\",
-            \"/opt/shared/libraries/common-utils\",
-            \"/home/john/experiments/ai-research\"
-          ],
-          \"cacheDir\": \"./mcp-cache\"
-        }"
-      ]
+      "args": ["/path/to/local-context-mcp/dist/index.js"],
+      "env": {
+        "searchableDirectories": "[\"/Users/john/projects/my-app\", \"/Users/john/work/client-project\", \"/opt/shared/libraries/common-utils\"]"
+      }
     }
   }
 }
 ```
 
-#### Option 2: Using config.json File
+### Cursor
 
-If you prefer to use a separate configuration file, add this to Claude Desktop config:
+Add to your Cursor MCP configuration (`~/.cursor/mcp.json` or project-specific `.cursor/mcp.json`):
 
 ```json
 {
   "mcpServers": {
     "local-context": {
       "command": "node",
-      "args": ["/path/to/local-context-mcp/dist/index.js"]
+      "args": ["/path/to/local-context-mcp/dist/index.js"],
+      "env": {
+        "searchableDirectories": "[\"/Users/john/projects/my-app\", \"/Users/john/work/client-project\", \"/opt/shared/libraries/common-utils\"]"
+      }
     }
   }
 }
 ```
 
-Then create a `config.json` file in the project directory with your directories.
+### Windsurf
 
-#### Option 3: Hybrid Configuration (Best of Both)
+Add to your Windsurf MCP configuration (`~/.codeium/windsurf/mcp_config.json`):
 
-You can combine both methods - use `config.json` for base directories and override/extend via MCP:
-
-**config.json:**
-```json
-{
-  "searchableDirectories": [
-    "/Users/john/projects/default-project",
-    "/Users/john/work/base-libraries"
-  ],
-  "cacheDir": "./mcp-cache"
-}
-```
-
-**Claude Desktop config:**
 ```json
 {
   "mcpServers": {
     "local-context": {
       "command": "node",
-      "args": [
-        "/path/to/local-context-mcp/dist/index.js",
-        "--config={\"searchableDirectories\":[\"/Users/john/temp/current-task\",\"/Users/john/projects/default-project\",\"/Users/john/work/base-libraries\"]}"
-      ]
+      "args": ["/path/to/local-context-mcp/dist/index.js"],
+      "env": {
+        "searchableDirectories": "[\"/Users/john/projects/my-app\", \"/Users/john/work/client-project\", \"/opt/shared/libraries/common-utils\"]"
+      }
     }
   }
 }
 ```
 
-Note: MCP configuration takes precedence when there are conflicts.
+### Alternative: Using config.json
+
+You can also create a `config.json` file in the project directory and manage it through the `update-config` tool. This allows dynamic configuration updates without editing your IDE settings.
 
 ### Agent System Prompt
 
